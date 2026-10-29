@@ -20,7 +20,7 @@ export function sendJson(
 ): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
-    "content-type": "application/json; charset=utf-8",
+    "content-type": "application/json",
     "content-length": Buffer.byteLength(payload),
     ...headers,
   });

@@ -31,10 +31,12 @@ test("healthz, readyz and metrics", async () => {
   const base = await start();
   let res = await fetch(`${base}/healthz`);
   assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-type"), "text/plain");
   assert.equal(await res.text(), "ok\n");
   ready = { ready: false, reason: "no data" };
   res = await fetch(`${base}/readyz`);
   assert.equal(res.status, 503);
+  assert.equal(res.headers.get("content-type"), "text/plain");
   assert.equal(await res.text(), "no data\n");
   live = { ready: false, reason: "starting" };
   res = await fetch(`${base}/healthz`);

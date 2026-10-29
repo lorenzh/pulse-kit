@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { StartupError } from "./settings.js";
 const METRICS_TYPE = "text/plain; version=0.0.4; charset=utf-8";
-function sendText(res, status, body, type = "text/plain; charset=utf-8") {
+function sendText(res, status, body, type = "text/plain") {
     res.writeHead(status, { "content-type": type, "content-length": Buffer.byteLength(body) });
     res.end(body);
 }

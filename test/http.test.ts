@@ -31,7 +31,7 @@ after(() => {
 test("readJsonBody parses and sendJson sets headers", async () => {
   const res = await fetch(`${base}/json`, { method: "POST", body: '{"a":1}' });
   assert.equal(res.status, 200);
-  assert.equal(res.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(res.headers.get("content-type"), "application/json");
   assert.equal(res.headers.get("x-a"), "b");
   assert.deepEqual(await res.json(), { got: { a: 1 } });
 });

@@ -24,12 +24,7 @@ export interface OpsServer {
 
 const METRICS_TYPE = "text/plain; version=0.0.4; charset=utf-8";
 
-function sendText(
-  res: ServerResponse,
-  status: number,
-  body: string,
-  type = "text/plain; charset=utf-8",
-): void {
+function sendText(res: ServerResponse, status: number, body: string, type = "text/plain"): void {
   res.writeHead(status, { "content-type": type, "content-length": Buffer.byteLength(body) });
   res.end(body);
 }
