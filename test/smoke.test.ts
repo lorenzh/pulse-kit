@@ -5,6 +5,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
+const ALL_MODULES = [
+  "index",
+  "escape",
+  "format-duration",
+  "http",
+  "logger",
+  "metrics",
+  "ops-server",
+  "run-service",
+  "settings",
+  "timer",
+];
+
 const root = new URL("..", import.meta.url).pathname;
 
 test("dist matches a fresh build of src", () => {
@@ -16,7 +29,7 @@ test("dist matches a fresh build of src", () => {
       [tsc, "-p", join(root, "tsconfig.build.json"), "--outDir", out],
       { cwd: root },
     );
-    for (const file of ["index"].flatMap((n) => [`${n}.d.ts`, `${n}.js`])) {
+    for (const file of ALL_MODULES.flatMap((n) => [`${n}.d.ts`, `${n}.js`])) {
       assert.equal(
         readFileSync(join(root, "dist", file), "utf8"),
         readFileSync(join(out, file), "utf8"),
@@ -31,5 +44,40 @@ test("dist matches a fresh build of src", () => {
 test("package entry exports the helpers", async () => {
   const mod = await import("@lorenzh/pulse-kit");
   const byName = (a: string, b: string): number => a.localeCompare(b);
-  assert.deepEqual(Object.keys(mod).sort(byName), ["MAX_TIMER_DELAY_MS"].sort(byName));
+  assert.deepEqual(
+    Object.keys(mod).sort(byName),
+    [
+      "BodyError",
+      "DURATION_BUCKETS_SECONDS",
+      "LOG_LEVELS",
+      "MAX_TIMER_DELAY_MS",
+      "StartupError",
+      "createLogger",
+      "createRegistry",
+      "escapeHtml",
+      "escapeLabel",
+      "formatDuration",
+      "handleOps",
+      "readBody",
+      "readBool",
+      "readEnum",
+      "readJsonBody",
+      "readLogLevel",
+      "readMs",
+      "readPort",
+      "readString",
+      "readUrl",
+      "runService",
+      "safeSetTimeout",
+      "sendJson",
+      "startOpsServer",
+    ].sort(byName),
+  );
+});
+
+test("browser-safe subpaths resolve", async () => {
+  const fd = await import("@lorenzh/pulse-kit/format-duration");
+  const esc = await import("@lorenzh/pulse-kit/escape");
+  assert.equal(fd.formatDuration(0), "<1m");
+  assert.equal(esc.escapeLabel('"'), '\\"');
 });

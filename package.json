@@ -11,6 +11,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./format-duration": {
+      "types": "./dist/format-duration.d.ts",
+      "default": "./dist/format-duration.js"
+    },
+    "./escape": {
+      "types": "./dist/escape.d.ts",
+      "default": "./dist/escape.js"
     }
   },
   "types": "./dist/index.d.ts",

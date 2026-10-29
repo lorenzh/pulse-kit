@@ -4,7 +4,7 @@
 
 pulse is an uptime monitor with a status page. This repository holds the shared runtime helpers of its services: env settings with bounds, signal handling and bounded shutdown, an ops HTTP server, a Prometheus metrics registry, one JSON logger and small HTTP and timer helpers. It is consumed by [pulse-probe](https://github.com/lorenzh/pulse-probe), [pulse-api](https://github.com/lorenzh/pulse-api), [pulse-status](https://github.com/lorenzh/pulse-status) and [pulse-notify](https://github.com/lorenzh/pulse-notify).
 
-The helpers are planned; today the package exports only `MAX_TIMER_DELAY_MS`. Documentation: [docs/index.md](docs/index.md).
+Documentation: [docs/index.md](docs/index.md).
 
 pulse is built by Paragon Factory agents from the issues in [pulse-meta](https://github.com/lorenzh/pulse-meta).
 
@@ -19,7 +19,8 @@ Depend on a pinned commit of `main`:
 ```
 
 ```ts
-import { MAX_TIMER_DELAY_MS } from "@lorenzh/pulse-kit";
+import { createLogger, readLogLevel, runService } from "@lorenzh/pulse-kit";
+import { formatDuration } from "@lorenzh/pulse-kit/format-duration"; // browser-safe subpaths: format-duration, escape
 ```
 
 The compiled output in `dist/` is committed, because Node does not strip types under

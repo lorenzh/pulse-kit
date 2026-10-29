@@ -27,6 +27,7 @@ repository. Node 24+ with native type stripping, ESM, npm, strict TypeScript (`t
 - `pulse-kit` does not import `pulse-contract`. Add that dependency only when a helper needs a contract type, and import it with `import type`.
 - A service never imports another service. Services talk to each other only over HTTP at run time.
 - Consumers pin pulse-kit to a full commit SHA on its `main`, like `pulse-contract`; they update the pin when the spec needs a newer kit.
+- Use pulse-kit, pulse-contract or an approved package before writing infrastructure code. Propose an addition to pulse-kit instead of a local helper.
 - Never copy kit helpers into a service; change the kit and bump the pin.
 - Edit only this repository. Other repositories in the workspace are read-only context.
 - Do not add `.factory/`, plan, or note files to this repository.
