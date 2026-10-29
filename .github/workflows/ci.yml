@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    uses: lorenzh/pulse-config/.github/workflows/check.yml@dc7c69698f96e7babebc1e3cddc081d71e5a4201
+    with:
+      build: true

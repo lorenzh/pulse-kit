@@ -1,0 +1,36 @@
+{
+  "name": "@lorenzh/pulse-kit",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Shared runtime helpers for the pulse services: env settings, shutdown, ops server, metrics, logging and small HTTP and timer helpers.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-exclude='**/*.test.ts' --test-coverage-exclude='test/**' --test-coverage-exclude='**/test/**' --test-coverage-exclude='dist/**'",
+    "lint": "biome check . && pulse-eslint .",
+    "format": "biome check --write .",
+    "prepare": "lefthook install || true",
+    "check": "npm run lint && npm run build && npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.3",
+    "@lorenzh/pulse-config": "github:lorenzh/pulse-config#dc7c69698f96e7babebc1e3cddc081d71e5a4201",
+    "@types/node": "^26.6.5",
+    "lefthook": "2.2.2",
+    "typescript": "^7.0.2"
+  }
+}
