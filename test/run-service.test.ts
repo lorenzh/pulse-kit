@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { test } from "node:test";
 import { createLogger } from "../src/logger.ts";
 import { runService } from "../src/run-service.ts";
 import { StartupError } from "../src/settings.ts";

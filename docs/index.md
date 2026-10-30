@@ -99,6 +99,6 @@ commit SHA on its `main`, exactly like pulse-contract.
 1. Merge the kit change to `main` of pulse-kit and note the full commit SHA.
 2. In the consumer, set the dependency in `package.json`:
    `"@lorenzh/pulse-kit": "github:lorenzh/pulse-kit#<full commit sha>"`.
-3. Run `npm install` to update `package-lock.json`.
-4. Run `npm run check` and fix any errors.
-5. Commit `package.json` and `package-lock.json` together.
+3. Run `bun install` to update `bun.lock`.
+4. Run `bun run check` and fix any errors.
+5. Commit `package.json` and `bun.lock` together.

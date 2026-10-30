@@ -1,14 +1,14 @@
+import { afterAll, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { after, test } from "node:test";
 import { handleOps, type OpsServer, type Readiness, startOpsServer } from "../src/ops-server.ts";
 import { StartupError } from "../src/settings.ts";
 
 let live: Readiness = { ready: true };
 let ready: Readiness = { ready: true };
 const servers: OpsServer[] = [];
-after(async () => {
+afterAll(async () => {
   for (const s of servers) await s.close();
 });
 

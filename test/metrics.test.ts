@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { test } from "node:test";
 import { createRegistry, DURATION_BUCKETS_SECONDS } from "../src/metrics.ts";
 
 test("bucket list", () => {

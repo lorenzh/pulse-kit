@@ -1,7 +1,7 @@
+import { afterAll, beforeAll, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { after, before, test } from "node:test";
 import { BodyError, readBody, readJsonBody, sendJson } from "../src/http.ts";
 
 const server = createServer((req, res) => {
@@ -19,11 +19,11 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   }
 }
 let base = "";
-before(async () => {
+beforeAll(async () => {
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-after(() => {
+afterAll(() => {
   server.closeAllConnections();
   server.close();
 });
