@@ -23,24 +23,24 @@ import { createLogger, readLogLevel, runService } from "@lorenzh/pulse-kit";
 import { formatDuration } from "@lorenzh/pulse-kit/format-duration"; // browser-safe subpaths: format-duration, escape
 ```
 
-The compiled output in `dist/` is committed, because Node does not strip types under
+The compiled output in `dist/` is committed, because Node and Bun do not reliably strip types under
 `node_modules` and Git dependencies have no build step. After changing `src/`, run
-`npm run build` and commit `dist/`. A test fails when `dist/` is out of date.
+`bun run build` and commit `dist/`. A test fails when `dist/` is out of date.
 
 ## Development
 
-Requires Node >= 24.
+Requires Bun 1.4.0.
 
 ```sh
-npm ci
-npm run check   # lint, build, typecheck and tests
-npm run lint    # Biome and SonarJS (ESLint) check, changes nothing
-npm run format  # Biome autofix (safe fixes only)
+bun install --frozen-lockfile
+bun run check   # lint, build, typecheck and tests
+bun run lint    # Biome and SonarJS (ESLint) check, changes nothing
+bun run format  # Biome autofix (safe fixes only)
 ```
 
-`npm ci` installs a Lefthook pre-commit hook that runs `biome check` on staged
+`bun install --frozen-lockfile` installs a Lefthook pre-commit hook that runs `biome check` on staged
 `*.js`, `*.ts`, `*.json` and `*.jsonc` files and ESLint on staged `*.js` and `*.ts` files, and rejects the commit if they are
-badly formatted or fail lint. Run `npm run format` to fix them.
+badly formatted or fail lint. Run `bun run format` to fix them.
 
 ## Shared tooling configuration
 

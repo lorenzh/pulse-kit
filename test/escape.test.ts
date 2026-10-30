@@ -1,6 +1,6 @@
+import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { test } from "node:test";
 import { escapeHtml, escapeLabel } from "../src/escape.ts";
 
 test("escapeHtml", () => {

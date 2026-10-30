@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import assert from "node:assert/strict";
-import { test } from "node:test";
 import { MAX_TIMER_DELAY_MS, safeSetTimeout } from "../src/index.ts";
 
 test("MAX_TIMER_DELAY_MS is 2^31 - 1", () => {

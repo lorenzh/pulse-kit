@@ -1,9 +1,9 @@
+import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
 
 const ALL_MODULES = [
   "index",
@@ -23,7 +23,7 @@ const root = new URL("..", import.meta.url).pathname;
 test("dist matches a fresh build of src", () => {
   const out = mkdtempSync(join(tmpdir(), "kit-dist-"));
   try {
-    const tsc = join(root, "node_modules", "typescript", "bin", "tsc");
+    const tsc = join(root, "node_modules", "typescript7", "bin", "tsc");
     execFileSync(
       process.execPath,
       [tsc, "-p", join(root, "tsconfig.build.json"), "--outDir", out],
@@ -33,7 +33,7 @@ test("dist matches a fresh build of src", () => {
       assert.equal(
         readFileSync(join(root, "dist", file), "utf8"),
         readFileSync(join(out, file), "utf8"),
-        `dist/${file} is out of date; run npm run build`,
+        `dist/${file} is out of date; run bun run build`,
       );
     }
   } finally {
