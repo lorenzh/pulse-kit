@@ -83,7 +83,11 @@ test("readMs rejects values above the timer max and accepts the max", () => {
 test("readMs throws RangeError for a bad max or fallback, even when unset", () => {
   assert.throws(() => readMs({}, "X", { fallback: 5000, min: 0, max: 3_000_000_000 }), {
     name: "RangeError",
-    message: "readMs(X): max must be at most 2147483647",
+    message: "readMs(X): max must be an integer of at most 2147483647",
+  });
+  assert.throws(() => readMs({}, "X", { fallback: 2_592_000_000, min: 0, max: Number.NaN }), {
+    name: "RangeError",
+    message: "readMs(X): max must be an integer of at most 2147483647",
   });
   assert.throws(() => readMs({}, "X", { fallback: 0, min: 1 }), {
     name: "RangeError",

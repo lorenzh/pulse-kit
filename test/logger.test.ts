@@ -132,6 +132,38 @@ test("a throwing getter or toJSON marks only that field, without its text", () =
   for (const line of lines) assert.ok(!line.includes("secret-sentinel"));
 });
 
+test("a throwing top-level getter marks only that field", () => {
+  let line = "";
+  const fields = {
+    get bad(): unknown {
+      throw new Error("secret-sentinel");
+    },
+    ok: 1,
+  };
+  createLogger({
+    now: () => 0,
+    write: (_, l) => {
+      line = l;
+    },
+  }).info("m", fields);
+  assert.equal(
+    line,
+    '{"time":"1970-01-01T00:00:00.000Z","level":"info","msg":"m","bad":"[Unserializable]","ok":1}',
+  );
+});
+
+test("toJSON receives the field key", () => {
+  let line = "";
+  const x = { toJSON: (key: string): string => `k:${key}` };
+  createLogger({
+    now: () => 0,
+    write: (_, l) => {
+      line = l;
+    },
+  }).info("m", { x, u: undefined });
+  assert.equal(line, '{"time":"1970-01-01T00:00:00.000Z","level":"info","msg":"m","x":"k:x"}');
+});
+
 test("fields that cannot be enumerated give fields [Unserializable]", () => {
   const { lines, log } = capture();
   const fields = new Proxy(

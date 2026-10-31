@@ -12,11 +12,14 @@ export function readLogLevel(env) {
     return readEnum(env, "PULSE_LOG_LEVEL", LOG_LEVELS, "info");
 }
 const UNSERIALIZABLE = '"[Unserializable]"';
-/** JSON for one field value: BigInt as decimal string, a cycle as "[Circular]". */
-function serializeValue(value) {
+/**
+ * `"key":json` for one field: BigInt as decimal string, a cycle as "[Circular]".
+ * The value is serialized inside a one-key object so `toJSON` still receives the field key.
+ */
+function serializeEntry(key, value) {
     // Objects on the path from the root to the current value; a repeat off this path is no cycle.
     const ancestors = [];
-    return JSON.stringify(value, function (_key, v) {
+    const json = JSON.stringify({ [key]: value }, function (_key, v) {
         if (typeof v === "bigint")
             return v.toString();
         if (typeof v !== "object" || v === null)
@@ -28,33 +31,35 @@ function serializeValue(value) {
         ancestors.push(v);
         return v;
     });
+    // Strip the wrapper braces; an undefined value leaves "".
+    return json.slice(1, -1);
 }
-function serializeField(value) {
+function fieldPart(fields, key) {
     try {
-        return serializeValue(value);
+        return serializeEntry(key, fields[key]);
     }
     catch {
-        // The thrown text may carry the value, so only a fixed marker is written.
-        return UNSERIALIZABLE;
+        // A throwing getter or toJSON may carry the value in its text, so only a fixed marker is written.
+        return `${JSON.stringify(key)}:${UNSERIALIZABLE}`;
     }
 }
 function fieldParts(fields) {
-    let entries;
+    let keys;
     try {
-        entries = Object.entries(fields);
+        keys = Object.keys(fields);
     }
     catch {
         // The fields object itself cannot be enumerated, e.g. a Proxy with a throwing ownKeys.
         return `,"fields":${UNSERIALIZABLE}`;
     }
     let out = "";
-    for (const [key, value] of entries) {
+    for (const key of keys) {
         // A field never overrides time, level or msg.
         if (BASE_KEYS.has(key))
             continue;
-        const json = serializeField(value);
-        if (json !== undefined)
-            out += `,${JSON.stringify(key)}:${json}`;
+        const part = fieldPart(fields, key);
+        if (part !== "")
+            out += `,${part}`;
     }
     return out;
 }

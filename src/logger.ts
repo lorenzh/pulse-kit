@@ -32,43 +32,51 @@ export function readLogLevel(env: Env): LogLevel {
 
 const UNSERIALIZABLE = '"[Unserializable]"';
 
-/** JSON for one field value: BigInt as decimal string, a cycle as "[Circular]". */
-function serializeValue(value: unknown): string | undefined {
+/**
+ * `"key":json` for one field: BigInt as decimal string, a cycle as "[Circular]".
+ * The value is serialized inside a one-key object so `toJSON` still receives the field key.
+ */
+function serializeEntry(key: string, value: unknown): string {
   // Objects on the path from the root to the current value; a repeat off this path is no cycle.
   const ancestors: unknown[] = [];
-  return JSON.stringify(value, function (this: unknown, _key: string, v: unknown): unknown {
-    if (typeof v === "bigint") return v.toString();
-    if (typeof v !== "object" || v === null) return v;
-    while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== this) ancestors.pop();
-    if (ancestors.includes(v)) return "[Circular]";
-    ancestors.push(v);
-    return v;
-  });
+  const json = JSON.stringify(
+    { [key]: value },
+    function (this: unknown, _key: string, v: unknown): unknown {
+      if (typeof v === "bigint") return v.toString();
+      if (typeof v !== "object" || v === null) return v;
+      while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== this) ancestors.pop();
+      if (ancestors.includes(v)) return "[Circular]";
+      ancestors.push(v);
+      return v;
+    },
+  );
+  // Strip the wrapper braces; an undefined value leaves "".
+  return json.slice(1, -1);
 }
 
-function serializeField(value: unknown): string | undefined {
+function fieldPart(fields: LogFields, key: string): string {
   try {
-    return serializeValue(value);
+    return serializeEntry(key, fields[key]);
   } catch {
-    // The thrown text may carry the value, so only a fixed marker is written.
-    return UNSERIALIZABLE;
+    // A throwing getter or toJSON may carry the value in its text, so only a fixed marker is written.
+    return `${JSON.stringify(key)}:${UNSERIALIZABLE}`;
   }
 }
 
 function fieldParts(fields: LogFields): string {
-  let entries: [string, unknown][];
+  let keys: string[];
   try {
-    entries = Object.entries(fields);
+    keys = Object.keys(fields);
   } catch {
     // The fields object itself cannot be enumerated, e.g. a Proxy with a throwing ownKeys.
     return `,"fields":${UNSERIALIZABLE}`;
   }
   let out = "";
-  for (const [key, value] of entries) {
+  for (const key of keys) {
     // A field never overrides time, level or msg.
     if (BASE_KEYS.has(key)) continue;
-    const json = serializeField(value);
-    if (json !== undefined) out += `,${JSON.stringify(key)}:${json}`;
+    const part = fieldPart(fields, key);
+    if (part !== "") out += `,${part}`;
   }
   return out;
 }
