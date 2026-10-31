@@ -1,6 +1,15 @@
+export {
+  BlockedAddressError,
+  connectFirst,
+  type LookupAll,
+  lookupAll,
+  resolveAllowed,
+} from "./address-guard.ts";
 export { escapeHtml, escapeLabel } from "./escape.ts";
 export { formatDuration } from "./format-duration.ts";
+export { createGuardedFetch, type GuardedFetch } from "./guarded-fetch.ts";
 export { BodyError, readBody, readJsonBody, sendJson } from "./http.ts";
+export { type AddressClassifier, createIpClassifier, type IpRule } from "./ip-classifier.ts";
 export {
   createLogger,
   LOG_LEVELS,

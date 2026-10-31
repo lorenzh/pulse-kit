@@ -1,6 +1,9 @@
+export { BlockedAddressError, connectFirst, lookupAll, resolveAllowed, } from "./address-guard.js";
 export { escapeHtml, escapeLabel } from "./escape.js";
 export { formatDuration } from "./format-duration.js";
+export { createGuardedFetch } from "./guarded-fetch.js";
 export { BodyError, readBody, readJsonBody, sendJson } from "./http.js";
+export { createIpClassifier } from "./ip-classifier.js";
 export { createLogger, LOG_LEVELS, readLogLevel, } from "./logger.js";
 export { createRegistry, DURATION_BUCKETS_SECONDS, } from "./metrics.js";
 export { handleOps, startOpsServer, } from "./ops-server.js";
