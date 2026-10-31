@@ -59,3 +59,21 @@ test("readSecretFile reports a read error by code only", () => {
   assert.equal(readError({ code: "not a code" }).message, "S=/run/s: cannot read");
   assert.equal(readError("boom").message, "S=/run/s: cannot read");
 });
+
+test("readSecretFile sanitizes a cause whose property trap throws", () => {
+  const cause = new Proxy(
+    {},
+    {
+      getOwnPropertyDescriptor(): never {
+        throw new Error("secret-sentinel");
+      },
+    },
+  );
+  const readFile = (): string => {
+    throw cause;
+  };
+  assert.throws(() => readSecretFile("/run/s", { setting: "S", readFile }), {
+    name: "StartupError",
+    message: "S=/run/s: cannot read",
+  });
+});

@@ -5,7 +5,14 @@ function errorCode(err) {
     if (typeof err !== "object" || err === null)
         return undefined;
     // An own data property only, so no getter of the thrown value runs.
-    const value = Object.getOwnPropertyDescriptor(err, "code")?.value;
+    let value;
+    try {
+        value = Object.getOwnPropertyDescriptor(err, "code")?.value;
+    }
+    catch {
+        // A Proxy trap threw; treat the code as unknown so its text never escapes.
+        return undefined;
+    }
     return typeof value === "string" && /^E[A-Z0-9]+$/.test(value) ? value : undefined;
 }
 /** A failed atomic write. The message names only the stage and a Node error code. */

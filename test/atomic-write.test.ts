@@ -276,3 +276,17 @@ for (const [name, run] of KINDS) {
     });
   });
 }
+
+test("AtomicWriteError sanitizes a cause whose property trap throws", () => {
+  const cause = new Proxy(
+    {},
+    {
+      getOwnPropertyDescriptor(): never {
+        throw new Error("secret-sentinel");
+      },
+    },
+  );
+  const err = new AtomicWriteError("write", cause);
+  assert.equal(err.message, "atomic write failed at write");
+  assert.equal(err.code, undefined);
+});

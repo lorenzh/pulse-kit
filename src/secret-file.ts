@@ -4,7 +4,13 @@ import { StartupError } from "./settings.ts";
 function errorCode(err: unknown): string | undefined {
   if (typeof err !== "object" || err === null) return undefined;
   // An own data property only, so no getter of the thrown value runs.
-  const value: unknown = Object.getOwnPropertyDescriptor(err, "code")?.value;
+  let value: unknown;
+  try {
+    value = Object.getOwnPropertyDescriptor(err, "code")?.value;
+  } catch {
+    // A Proxy trap threw; treat the code as unknown so its text never escapes.
+    return undefined;
+  }
   return typeof value === "string" && /^E[A-Z0-9]+$/.test(value) ? value : undefined;
 }
 
