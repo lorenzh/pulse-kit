@@ -206,3 +206,11 @@ test("undefined, functions and symbols stay dropped; Date serializes as before",
     '{"time":"1970-01-01T00:00:00.000Z","level":"info","msg":"m","d":"1970-01-01T00:00:00.000Z"}',
   );
 });
+
+test("a function field named toJSON is dropped and cannot forge base keys", () => {
+  const { lines, log } = capture();
+  log.info("m", { toJSON: () => "hello", ok: 1 });
+  log.info("m", { toJSON: () => ({ level: "forged", msg: "replacement" }) });
+  assert.equal(lines[0], '{"time":"1970-01-01T00:00:00.000Z","level":"info","msg":"m","ok":1}');
+  assert.equal(lines[1], '{"time":"1970-01-01T00:00:00.000Z","level":"info","msg":"m"}');
+});

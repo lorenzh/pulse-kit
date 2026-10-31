@@ -37,6 +37,8 @@ const UNSERIALIZABLE = '"[Unserializable]"';
  * The value is serialized inside a one-key object so `toJSON` still receives the field key.
  */
 function serializeEntry(key: string, value: unknown): string {
+  // A callable "toJSON" field would run as the wrapper's serializer; functions are dropped anyway.
+  if (key === "toJSON" && typeof value === "function") return "";
   // Objects on the path from the root to the current value; a repeat off this path is no cycle.
   const ancestors: unknown[] = [];
   const json = JSON.stringify(
