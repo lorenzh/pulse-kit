@@ -19,6 +19,10 @@
     "./escape": {
       "types": "./dist/escape.d.ts",
       "default": "./dist/escape.js"
+    },
+    "./is-record": {
+      "types": "./dist/is-record.d.ts",
+      "default": "./dist/is-record.js"
     }
   },
   "types": "./dist/index.d.ts",

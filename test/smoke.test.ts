@@ -7,13 +7,16 @@ import { join } from "node:path";
 
 const ALL_MODULES = [
   "index",
+  "atomic-write",
   "escape",
   "format-duration",
   "http",
+  "is-record",
   "logger",
   "metrics",
   "ops-server",
   "run-service",
+  "secret-file",
   "settings",
   "timer",
 ];
@@ -47,6 +50,7 @@ test("package entry exports the helpers", async () => {
   assert.deepEqual(
     Object.keys(mod).sort(byName),
     [
+      "AtomicWriteError",
       "BodyError",
       "DURATION_BUCKETS_SECONDS",
       "LOG_LEVELS",
@@ -58,19 +62,26 @@ test("package entry exports the helpers", async () => {
       "escapeLabel",
       "formatDuration",
       "handleOps",
+      "isRecord",
+      "nodeAtomicWriteFs",
+      "nodeAtomicWriteSyncFs",
       "readBody",
       "readBool",
       "readEnum",
+      "readInt",
       "readJsonBody",
       "readLogLevel",
       "readMs",
       "readPort",
+      "readSecretFile",
       "readString",
       "readUrl",
       "runService",
       "safeSetTimeout",
       "sendJson",
       "startOpsServer",
+      "writeFileAtomic",
+      "writeFileAtomicSync",
     ].sort(byName),
   );
 });
@@ -80,4 +91,11 @@ test("browser-safe subpaths resolve", async () => {
   const esc = await import("@lorenzh/pulse-kit/escape");
   assert.equal(fd.formatDuration(0), "<1m");
   assert.equal(esc.escapeLabel('"'), '\\"');
+  const rec = await import("@lorenzh/pulse-kit/is-record");
+  assert.equal(rec.isRecord({}), true);
+  assert.equal(rec.isRecord([]), false);
+});
+
+test("the is-record subpath imports nothing", () => {
+  assert.doesNotMatch(readFileSync(join(root, "dist", "is-record.js"), "utf8"), /\bimport\b/);
 });

@@ -1,6 +1,18 @@
+export {
+  AtomicWriteError,
+  type AtomicWriteFs,
+  type AtomicWriteOptions,
+  type AtomicWriteStage,
+  type AtomicWriteSyncFs,
+  nodeAtomicWriteFs,
+  nodeAtomicWriteSyncFs,
+  writeFileAtomic,
+  writeFileAtomicSync,
+} from "./atomic-write.ts";
 export { escapeHtml, escapeLabel } from "./escape.ts";
 export { formatDuration } from "./format-duration.ts";
 export { BodyError, readBody, readJsonBody, sendJson } from "./http.ts";
+export { isRecord } from "./is-record.ts";
 export {
   createLogger,
   LOG_LEVELS,
@@ -27,10 +39,12 @@ export {
   startOpsServer,
 } from "./ops-server.ts";
 export { type RunServiceOptions, runService } from "./run-service.ts";
+export { readSecretFile } from "./secret-file.ts";
 export {
   type Env,
   readBool,
   readEnum,
+  readInt,
   readMs,
   readPort,
   readString,

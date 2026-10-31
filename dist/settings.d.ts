@@ -13,6 +13,16 @@ interface Describe {
 }
 /** The trimmed value, or undefined when unset or blank. */
 export declare function readString(env: Env, name: string): string | undefined;
+/** An integer setting without a timer bound, such as a count or a day number. */
+export declare function readInt(env: Env, name: string, opts: {
+    fallback: number;
+    min: number;
+    max?: number;
+} & Describe): number;
+/**
+ * A delay in ms that feeds a timer: at most `MAX_TIMER_DELAY_MS`. Throws `RangeError` for an
+ * explicit `max` above that bound or a `fallback` outside `[min, max]`.
+ */
 export declare function readMs(env: Env, name: string, opts: {
     fallback: number;
     min: number;
