@@ -47,6 +47,9 @@ export function readMs(env, name, opts) {
     if (!Number.isInteger(max) || max > MAX_TIMER_DELAY_MS) {
         throw new RangeError(`readMs(${name}): max must be an integer of at most ${MAX_TIMER_DELAY_MS}`);
     }
+    if (!Number.isInteger(opts.min)) {
+        throw new RangeError(`readMs(${name}): min must be an integer`);
+    }
     if (!Number.isInteger(opts.fallback) || opts.fallback < opts.min || opts.fallback > max) {
         throw new RangeError(`readMs(${name}): fallback must be an integer from ${opts.min} to ${max}`);
     }
