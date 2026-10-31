@@ -59,6 +59,33 @@ function pinnedInit(url: URL, init: BunFetchRequestInit, headers: Headers): BunF
   return { ...init, headers, tls: { ...init.tls, serverName: url.hostname } };
 }
 
+function redactPath(value: unknown, origin: string): void {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "path" in value &&
+    typeof value.path === "string"
+  ) {
+    // Bun puts the full URL, with credentials and query, in `path`. It cannot be deleted.
+    Object.assign(value, { path: origin });
+  }
+}
+
+/** Calls the transport and keeps the URL's credentials and query out of its error. */
+async function send(
+  fetch: GuardedFetchOptions["fetch"],
+  target: URL,
+  init: BunFetchRequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(target.href, init);
+  } catch (err) {
+    redactPath(err, target.origin);
+    if (err instanceof Error) redactPath(err.cause, target.origin);
+    throw err;
+  }
+}
+
 /** Wraps `fetch` so every call resolves the host, checks every address and connects to one. */
 export function createGuardedFetch({ fetch, lookup, classify }: GuardedFetchOptions): GuardedFetch {
   return async (input, init) => {
@@ -72,7 +99,7 @@ export function createGuardedFetch({ fetch, lookup, classify }: GuardedFetchOpti
     });
     if (isIpLiteralHost(url.hostname)) {
       // Through connectFirst too, so an abort after the lookup still stops the attempt.
-      return connectFirst(addresses, () => fetch(url.href, options), options.signal ?? undefined);
+      return connectFirst(addresses, () => send(fetch, url, options), options.signal ?? undefined);
     }
     const pinned = pinnedInit(url, options, headers);
     return connectFirst(
@@ -80,7 +107,7 @@ export function createGuardedFetch({ fetch, lookup, classify }: GuardedFetchOpti
       (address) => {
         const target = new URL(url);
         target.hostname = address.includes(":") ? `[${address}]` : address;
-        return fetch(target.href, pinned);
+        return send(fetch, target, pinned);
       },
       options.signal ?? undefined,
     );

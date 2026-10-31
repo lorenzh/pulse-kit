@@ -217,3 +217,27 @@ describe("cancellation", () => {
     assert.equal(calls.length, 0);
   });
 });
+
+describe("transport errors", () => {
+  test("a real connect error holds no credentials or query", async () => {
+    const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: () => new Response() });
+    const port = server.port;
+    await server.stop(true);
+    const guarded = createGuardedFetch({
+      classify: createIpClassifier([]),
+      lookup: () => Promise.resolve(["127.0.0.1"]),
+      fetch: (url, init) => fetch(url, init),
+    });
+    const err: unknown = await guarded(
+      `http://user:pw-sentinel@pinned.test:${port}/?q=query-sentinel`,
+      {
+        redirect: "manual",
+      },
+    ).catch((e: unknown) => e);
+    assert.ok(err instanceof Error);
+    const text = Bun.inspect(err);
+    assert.equal(text.includes("pw-sentinel"), false);
+    assert.equal(text.includes("query-sentinel"), false);
+    assert.equal((err as Error & { code?: unknown }).code, "ConnectionRefused");
+  });
+});
