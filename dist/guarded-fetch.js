@@ -29,8 +29,16 @@ function isIpLiteralHost(hostname) {
     // The WHATWG URL parser normalizes every IPv4 spelling to dotted form and brackets IPv6.
     return hostname.startsWith("[") || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 }
-function pinnedInit(url, init) {
-    const headers = new Headers(init.headers);
+function parseHeaders(init) {
+    try {
+        return new Headers(init.headers);
+    }
+    catch {
+        // No cause: the Headers error quotes the bad value, which may be a credential.
+        throw new TypeError("guarded fetch needs valid headers");
+    }
+}
+function pinnedInit(url, init, headers) {
     headers.set("host", url.host);
     if (url.protocol !== "https:")
         return { ...init, headers };
@@ -43,6 +51,7 @@ export function createGuardedFetch({ fetch, lookup, classify }) {
     return async (input, init) => {
         const url = parseTarget(input, init);
         const options = init ?? {};
+        const headers = parseHeaders(options);
         const addresses = await resolveAllowed(url.hostname, {
             lookup,
             classify,
@@ -52,7 +61,7 @@ export function createGuardedFetch({ fetch, lookup, classify }) {
             // Through connectFirst too, so an abort after the lookup still stops the attempt.
             return connectFirst(addresses, () => fetch(url.href, options), options.signal ?? undefined);
         }
-        const pinned = pinnedInit(url, options);
+        const pinned = pinnedInit(url, options, headers);
         return connectFirst(addresses, (address) => {
             const target = new URL(url);
             target.hostname = address.includes(":") ? `[${address}]` : address;

@@ -42,8 +42,16 @@ function isIpLiteralHost(hostname: string): boolean {
   return hostname.startsWith("[") || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 }
 
-function pinnedInit(url: URL, init: BunFetchRequestInit): BunFetchRequestInit {
-  const headers = new Headers(init.headers);
+function parseHeaders(init: BunFetchRequestInit): Headers {
+  try {
+    return new Headers(init.headers);
+  } catch {
+    // No cause: the Headers error quotes the bad value, which may be a credential.
+    throw new TypeError("guarded fetch needs valid headers");
+  }
+}
+
+function pinnedInit(url: URL, init: BunFetchRequestInit, headers: Headers): BunFetchRequestInit {
   headers.set("host", url.host);
   if (url.protocol !== "https:") return { ...init, headers };
   // serverName takes precedence over Host for SNI and certificate checks in Bun, and Bun keys
@@ -56,6 +64,7 @@ export function createGuardedFetch({ fetch, lookup, classify }: GuardedFetchOpti
   return async (input, init) => {
     const url = parseTarget(input, init);
     const options: BunFetchRequestInit = init ?? {};
+    const headers = parseHeaders(options);
     const addresses = await resolveAllowed(url.hostname, {
       lookup,
       classify,
@@ -65,7 +74,7 @@ export function createGuardedFetch({ fetch, lookup, classify }: GuardedFetchOpti
       // Through connectFirst too, so an abort after the lookup still stops the attempt.
       return connectFirst(addresses, () => fetch(url.href, options), options.signal ?? undefined);
     }
-    const pinned = pinnedInit(url, options);
+    const pinned = pinnedInit(url, options, headers);
     return connectFirst(
       addresses,
       (address) => {

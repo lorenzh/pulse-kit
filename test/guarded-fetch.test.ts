@@ -83,6 +83,18 @@ describe("redirect mode and inputs", () => {
     assert.equal(seen.includes("pw-sentinel"), false);
     assert.equal(seen.includes("query-sentinel"), false);
   });
+
+  test("a bad header error holds no part of the value", async () => {
+    const { guarded, calls, lookups } = setup([["203.0.113.10"]]);
+    const err: unknown = await guarded("https://flip.test/", {
+      redirect: "manual",
+      headers: { authorization: "Bearer header-sentinel\r\nX: y" },
+    }).catch((e: unknown) => e);
+    assert.ok(err instanceof TypeError);
+    assert.equal(Bun.inspect(err).includes("header-sentinel"), false);
+    assert.deepEqual(lookups, []);
+    assert.equal(calls.length, 0);
+  });
 });
 
 describe("validation vs connection", () => {
