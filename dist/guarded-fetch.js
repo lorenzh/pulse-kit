@@ -48,8 +48,10 @@ export function createGuardedFetch({ fetch, lookup, classify }) {
             classify,
             signal: options.signal ?? undefined,
         });
-        if (isIpLiteralHost(url.hostname))
-            return fetch(url.href, options);
+        if (isIpLiteralHost(url.hostname)) {
+            // Through connectFirst too, so an abort after the lookup still stops the attempt.
+            return connectFirst(addresses, () => fetch(url.href, options), options.signal ?? undefined);
+        }
         const pinned = pinnedInit(url, options);
         return connectFirst(addresses, (address) => {
             const target = new URL(url);

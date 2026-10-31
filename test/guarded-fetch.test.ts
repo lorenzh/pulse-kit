@@ -191,3 +191,17 @@ describe("fallback", () => {
     });
   }
 });
+
+describe("cancellation", () => {
+  test("an abort after the call starts stops an IP literal target", async () => {
+    const { guarded, calls } = setup([]);
+    const controller = new AbortController();
+    const pending = guarded("https://203.0.113.10/", {
+      redirect: "manual",
+      signal: controller.signal,
+    });
+    controller.abort(new Error("stop"));
+    await assert.rejects(pending, { message: "stop" });
+    assert.equal(calls.length, 0);
+  });
+});
