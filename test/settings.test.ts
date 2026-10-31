@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   readBool,
   readEnum,
+  readInt,
   readMs,
   readPort,
   readString,
@@ -40,20 +41,73 @@ test("readMs reads, defaults and rejects without echoing the value", () => {
   assert.equal(readMs({ A: "" }, "A", o), 5000);
   assert.equal(readMs({ A: "2500" }, "A", o), 2500);
   const bad = messageOf(() => readMs({ A: "12abc" }, "A", o));
-  assert.equal(bad.message, "A: must be an integer >= 1000");
+  assert.equal(bad.message, "A: must be an integer from 1000 to 2147483647");
   assert.equal(bad.setting, "A");
   assert.equal(
     messageOf(() => readMs({ A: "999" }, "A", o)).message,
-    "A: must be an integer >= 1000",
+    "A: must be an integer from 1000 to 2147483647",
   );
   assert.equal(
-    messageOf(() => readMs({ A: "11" }, "A", { ...o, min: 1, max: 10 })).message,
+    messageOf(() => readMs({ A: "11" }, "A", { fallback: 5, min: 1, max: 10 })).message,
     "A: must be an integer from 1 to 10",
   );
   assert.equal(
     messageOf(() => readMs({ A: "x" }, "A", { ...o, describe: "custom" })).message,
     "A: custom",
   );
+});
+
+test("readMs rejects values above the timer max and accepts the max", () => {
+  const o = { fallback: 1, min: 0 };
+  const scheduled: number[] = [];
+  const fakeSetTimeout = (ms: number): void => {
+    scheduled.push(ms);
+  };
+  for (const raw of ["2592000000", "2147483648"]) {
+    const err = messageOf(() => fakeSetTimeout(readMs({ X: raw }, "X", o)));
+    assert.equal(err.message, "X: must be an integer from 0 to 2147483647");
+    assert.equal(err.setting, "X");
+    assert.ok(!err.message.includes(raw));
+  }
+  assert.deepEqual(scheduled, []);
+  assert.equal(readMs({ X: "2147483647" }, "X", o), 2147483647);
+  assert.equal(
+    messageOf(() => readMs({ X: "-1" }, "X", o)).message,
+    "X: must be an integer from 0 to 2147483647",
+  );
+  for (const raw of ["1e3", "5000ms"])
+    assert.throws(() => readMs({ X: raw }, "X", o), StartupError);
+  assert.equal(readMs({ X: " " }, "X", o), 1);
+});
+
+test("readMs throws RangeError for a bad max or fallback, even when unset", () => {
+  assert.throws(() => readMs({}, "X", { fallback: 5000, min: 0, max: 3_000_000_000 }), {
+    name: "RangeError",
+    message: "readMs(X): max must be at most 2147483647",
+  });
+  assert.throws(() => readMs({}, "X", { fallback: 0, min: 1 }), {
+    name: "RangeError",
+    message: "readMs(X): fallback must be an integer from 1 to 2147483647",
+  });
+  assert.throws(() => readMs({}, "X", { fallback: 1.5, min: 0, max: 10 }), {
+    name: "RangeError",
+    message: "readMs(X): fallback must be an integer from 0 to 10",
+  });
+});
+
+test("readInt keeps the safe-integer range and the >= rule", () => {
+  const o = { fallback: 1, min: 0 };
+  assert.equal(readInt({ X: "3000000000" }, "X", o), 3000000000);
+  assert.equal(readInt({}, "X", o), 1);
+  assert.equal(
+    messageOf(() => readInt({ X: "89" }, "X", { fallback: 90, min: 90 })).message,
+    "X: must be an integer >= 90",
+  );
+  assert.equal(
+    messageOf(() => readInt({ X: "11" }, "X", { fallback: 5, min: 1, max: 10 })).message,
+    "X: must be an integer from 1 to 10",
+  );
+  assert.equal(messageOf(() => readInt({ X: "y" }, "X", { ...o, describe: "c" })).message, "X: c");
 });
 
 test("readPort", () => {

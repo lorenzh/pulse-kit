@@ -1,5 +1,6 @@
 import type { Logger } from "./logger.ts";
 import { StartupError } from "./settings.ts";
+import { MAX_TIMER_DELAY_MS } from "./timer.ts";
 
 export interface RunServiceOptions {
   /** Service name, such as "probe". Prefixes startup error lines. */
@@ -7,9 +8,9 @@ export interface RunServiceOptions {
   start: () => Promise<void>;
   /** Idempotent graceful stop. */
   stop: (signal: string) => Promise<void>;
-  /** Bound on `stop`. */
+  /** Bound on `stop`: an integer from 1 to 2147483647. */
   timeoutMs: number;
-  /** Exit code when `stop` does not finish in time. Default 0. */
+  /** Exit code when `stop` does not finish in time. Default 1; an integer from 1 to 255. */
   timeoutExitCode?: number;
   log?: Logger;
   proc?: {
@@ -25,12 +26,27 @@ function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+function checkOptions(opts: RunServiceOptions): void {
+  const { timeoutMs, timeoutExitCode } = opts;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > MAX_TIMER_DELAY_MS) {
+    throw new RangeError(`timeoutMs must be an integer from 1 to ${MAX_TIMER_DELAY_MS}`);
+  }
+  if (
+    timeoutExitCode !== undefined &&
+    (!Number.isInteger(timeoutExitCode) || timeoutExitCode < 1 || timeoutExitCode > 255)
+  ) {
+    throw new RangeError("timeoutExitCode must be an integer from 1 to 255");
+  }
+}
+
 /**
  * Registers SIGINT and SIGTERM before `start`, reports a startup failure (exit 2 for a
  * `StartupError`, 1 otherwise) and stops within `timeoutMs` on a signal. Resolves when `start`
  * has settled.
  */
 export async function runService(opts: RunServiceOptions): Promise<void> {
+  // Runs before any signal handler is registered and before start.
+  checkOptions(opts);
   const proc = opts.proc ?? process;
   const setTimer = opts.setTimeout ?? setTimeout;
   const clearTimer = opts.clearTimeout ?? clearTimeout;
@@ -52,7 +68,7 @@ export async function runService(opts: RunServiceOptions): Promise<void> {
       opts.log?.warn(`shutdown did not finish within ${opts.timeoutMs}ms; exiting anyway`, {
         timeoutMs: opts.timeoutMs,
       });
-      proc.exit(opts.timeoutExitCode ?? 0);
+      proc.exit(opts.timeoutExitCode ?? 1);
     }, opts.timeoutMs);
     try {
       await opts.stop(signal);

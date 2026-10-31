@@ -1,6 +1,17 @@
 import { StartupError } from "./settings.js";
+import { MAX_TIMER_DELAY_MS } from "./timer.js";
 function messageOf(err) {
     return err instanceof Error ? err.message : String(err);
+}
+function checkOptions(opts) {
+    const { timeoutMs, timeoutExitCode } = opts;
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > MAX_TIMER_DELAY_MS) {
+        throw new RangeError(`timeoutMs must be an integer from 1 to ${MAX_TIMER_DELAY_MS}`);
+    }
+    if (timeoutExitCode !== undefined &&
+        (!Number.isInteger(timeoutExitCode) || timeoutExitCode < 1 || timeoutExitCode > 255)) {
+        throw new RangeError("timeoutExitCode must be an integer from 1 to 255");
+    }
 }
 /**
  * Registers SIGINT and SIGTERM before `start`, reports a startup failure (exit 2 for a
@@ -8,6 +19,8 @@ function messageOf(err) {
  * has settled.
  */
 export async function runService(opts) {
+    // Runs before any signal handler is registered and before start.
+    checkOptions(opts);
     const proc = opts.proc ?? process;
     const setTimer = opts.setTimeout ?? setTimeout;
     const clearTimer = opts.clearTimeout ?? clearTimeout;
@@ -30,7 +43,7 @@ export async function runService(opts) {
             opts.log?.warn(`shutdown did not finish within ${opts.timeoutMs}ms; exiting anyway`, {
                 timeoutMs: opts.timeoutMs,
             });
-            proc.exit(opts.timeoutExitCode ?? 0);
+            proc.exit(opts.timeoutExitCode ?? 1);
         }, opts.timeoutMs);
         try {
             await opts.stop(signal);

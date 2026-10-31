@@ -1,3 +1,5 @@
+import { MAX_TIMER_DELAY_MS } from "./timer.ts";
+
 export type Env = Readonly<Record<string, string | undefined>>;
 
 /** The only startup and config error class of the pulse services. */
@@ -32,20 +34,49 @@ function readInteger(raw: string, min: number, max: number): number | undefined 
   return Number.isSafeInteger(value) && value >= min && value <= max ? value : undefined;
 }
 
+function readRanged(
+  env: Env,
+  name: string,
+  opts: { fallback: number; min: number; max?: number } & Describe,
+  defaultMax: number,
+): number {
+  const raw = readString(env, name);
+  if (raw === undefined) return opts.fallback;
+  const value = readInteger(raw, opts.min, opts.max ?? defaultMax);
+  if (value !== undefined) return value;
+  const rule =
+    opts.max === undefined && defaultMax === Number.MAX_SAFE_INTEGER
+      ? `must be an integer >= ${opts.min}`
+      : `must be an integer from ${opts.min} to ${opts.max ?? defaultMax}`;
+  throw invalid(name, opts.describe ?? rule);
+}
+
+/** An integer setting without a timer bound, such as a count or a day number. */
+export function readInt(
+  env: Env,
+  name: string,
+  opts: { fallback: number; min: number; max?: number } & Describe,
+): number {
+  return readRanged(env, name, opts, Number.MAX_SAFE_INTEGER);
+}
+
+/**
+ * A delay in ms that feeds a timer: at most `MAX_TIMER_DELAY_MS`. Throws `RangeError` for an
+ * explicit `max` above that bound or a `fallback` outside `[min, max]`.
+ */
 export function readMs(
   env: Env,
   name: string,
   opts: { fallback: number; min: number; max?: number } & Describe,
 ): number {
-  const raw = readString(env, name);
-  if (raw === undefined) return opts.fallback;
-  const value = readInteger(raw, opts.min, opts.max ?? Number.MAX_SAFE_INTEGER);
-  if (value !== undefined) return value;
-  const rule =
-    opts.max === undefined
-      ? `must be an integer >= ${opts.min}`
-      : `must be an integer from ${opts.min} to ${opts.max}`;
-  throw invalid(name, opts.describe ?? rule);
+  const max = opts.max ?? MAX_TIMER_DELAY_MS;
+  if (max > MAX_TIMER_DELAY_MS) {
+    throw new RangeError(`readMs(${name}): max must be at most ${MAX_TIMER_DELAY_MS}`);
+  }
+  if (!Number.isInteger(opts.fallback) || opts.fallback < opts.min || opts.fallback > max) {
+    throw new RangeError(`readMs(${name}): fallback must be an integer from ${opts.min} to ${max}`);
+  }
+  return readRanged(env, name, { ...opts, max }, MAX_TIMER_DELAY_MS);
 }
 
 export function readPort(

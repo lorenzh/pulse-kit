@@ -5,9 +5,9 @@ export interface RunServiceOptions {
     start: () => Promise<void>;
     /** Idempotent graceful stop. */
     stop: (signal: string) => Promise<void>;
-    /** Bound on `stop`. */
+    /** Bound on `stop`: an integer from 1 to 2147483647. */
     timeoutMs: number;
-    /** Exit code when `stop` does not finish in time. Default 0. */
+    /** Exit code when `stop` does not finish in time. Default 1; an integer from 1 to 255. */
     timeoutExitCode?: number;
     log?: Logger;
     proc?: {
