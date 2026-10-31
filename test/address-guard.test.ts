@@ -106,6 +106,19 @@ describe("resolveAllowed", () => {
   });
 });
 
+test("resolveAllowed: a lookup that aborts while it is called rejects with the reason", async () => {
+  const controller = new AbortController();
+  const reason = new Error("aborted in call");
+  const lookup = (): Promise<readonly string[]> => {
+    controller.abort(reason);
+    return Promise.resolve(["203.0.113.10"]);
+  };
+  await assert.rejects(
+    resolveAllowed("a.test", { lookup, classify, signal: controller.signal }),
+    (err: unknown) => err === reason,
+  );
+});
+
 describe("lookupAll", () => {
   test("resolves localhost through the system resolver", async () => {
     assert.ok((await lookupAll("localhost")).includes("127.0.0.1"));
@@ -181,6 +194,23 @@ describe("connectFirst", () => {
       ),
     );
     assert.deepEqual(tried, ["a"]);
+  });
+
+  test("an already aborted signal makes no attempt", async () => {
+    const tried: string[] = [];
+    const signal = AbortSignal.abort(new Error("gone"));
+    await assert.rejects(
+      connectFirst(
+        ["a"],
+        (address) => {
+          tried.push(address);
+          return Promise.resolve("connected");
+        },
+        signal,
+      ),
+      { message: "gone" },
+    );
+    assert.deepEqual(tried, []);
   });
 
   test("an empty list throws TypeError", async () => {

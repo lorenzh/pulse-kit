@@ -16,8 +16,9 @@ function parseTarget(input, init) {
     try {
         url = new URL(input);
     }
-    catch (err) {
-        throw new TypeError("guarded fetch needs a valid URL", { cause: err });
+    catch {
+        // No cause: the parser error holds the input URL, which may carry credentials.
+        throw new TypeError("guarded fetch needs a valid URL");
     }
     if (url.protocol !== "http:" && url.protocol !== "https:") {
         throw new TypeError("guarded fetch needs an http or https URL");

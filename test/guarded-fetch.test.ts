@@ -73,6 +73,16 @@ describe("redirect mode and inputs", () => {
     assert.equal(lookups.length, 0);
     assert.equal(calls.length, 0);
   });
+
+  test("a bad URL error holds no part of the input", async () => {
+    const { guarded } = setup([["203.0.113.10"]]);
+    const input = "https://user:pw-sentinel@[bad/?q=query-sentinel";
+    const err: unknown = await guarded(input, { redirect: "manual" }).catch((e: unknown) => e);
+    assert.ok(err instanceof TypeError);
+    const seen = Bun.inspect(err);
+    assert.equal(seen.includes("pw-sentinel"), false);
+    assert.equal(seen.includes("query-sentinel"), false);
+  });
 });
 
 describe("validation vs connection", () => {

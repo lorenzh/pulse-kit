@@ -28,11 +28,20 @@ export interface ResolveOptions {
   signal?: AbortSignal | undefined;
 }
 
-function raceSignal<T>(promise: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
-  if (signal === undefined) return promise;
+function raceSignal<T>(run: () => Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+  if (signal === undefined) return run();
   return new Promise<T>((resolve, reject) => {
     const onAbort = (): void => reject(signal.reason);
+    // The listener goes in before `run`, so an abort during the call still rejects.
     signal.addEventListener("abort", onAbort, { once: true });
+    const promise = run();
+    if (signal.aborted) {
+      signal.removeEventListener("abort", onAbort);
+      reject(signal.reason);
+      // The lookup result no longer matters; its rejection must not go unhandled.
+      promise.catch(() => undefined);
+      return;
+    }
     promise.then(
       (value) => {
         signal.removeEventListener("abort", onAbort);
@@ -60,7 +69,8 @@ export async function resolveAllowed(
 ): Promise<readonly string[]> {
   signal?.throwIfAborted();
   const literal = normalizeAddress(host);
-  const addresses = isIP(literal) === 0 ? await raceSignal(lookupImpl(host), signal) : [literal];
+  const addresses =
+    isIP(literal) === 0 ? await raceSignal(() => lookupImpl(host), signal) : [literal];
   if (addresses.length === 0) throw notFound();
   const allowed: string[] = [];
   for (const raw of addresses) {
@@ -105,6 +115,7 @@ export async function connectFirst<T>(
   if (addresses.length === 0) throw new TypeError("no address to connect to");
   let lastError: unknown;
   for (const address of addresses) {
+    signal?.throwIfAborted();
     try {
       return await attempt(address);
     } catch (err) {
