@@ -39,7 +39,12 @@ function addCidr(list: BlockList, cidr: string): void {
   const prefixText = slash === -1 ? String(max) : cidr.slice(slash + 1);
   const prefix = /^\d{1,3}$/.test(prefixText) ? Number(prefixText) : Number.NaN;
   if (!(prefix >= 0 && prefix <= max)) throw new TypeError("invalid CIDR prefix");
-  list.addSubnet(address, prefix, family);
+  try {
+    list.addSubnet(address, prefix, family);
+  } catch (error) {
+    // isIP accepts forms such as a `%zone` that BlockList rejects with a plain Error.
+    throw new TypeError("invalid CIDR address", { cause: error });
+  }
 }
 
 /**

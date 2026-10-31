@@ -25,6 +25,15 @@ describe("createIpClassifier", () => {
     }
   });
 
+  test("a CIDR with a zone throws TypeError", () => {
+    for (const cidr of ["2001:db8::1%eth0/64", "2001:db8::1%eth0"]) {
+      assert.throws(
+        () => createIpClassifier([{ category: "x", cidrs: [cidr] }]),
+        (err: unknown) => err instanceof TypeError && !err.message.includes(cidr),
+      );
+    }
+  });
+
   test("a non-IP value is null", () => {
     const classify = createIpClassifier([{ category: "x", cidrs: ["0.0.0.0/0"] }]);
     assert.equal(classify("example.com"), null);
