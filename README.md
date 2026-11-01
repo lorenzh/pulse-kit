@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/lorenzh/pulse-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/lorenzh/pulse-kit/actions/workflows/ci.yml)
 
-pulse is an uptime monitor with a status page. This repository holds the shared runtime helpers of its services: env settings with bounds, signal handling and bounded shutdown, an ops HTTP server, a Prometheus metrics registry, one JSON logger and small HTTP and timer helpers. It is consumed by [pulse-probe](https://github.com/lorenzh/pulse-probe), [pulse-api](https://github.com/lorenzh/pulse-api), [pulse-status](https://github.com/lorenzh/pulse-status), [pulse-notify](https://github.com/lorenzh/pulse-notify) and [pulse-console](https://github.com/lorenzh/pulse-console).
+pulse is an uptime monitor with a status page. This repository holds the shared runtime helpers of its services: env settings with bounds, signal handling and bounded shutdown, an ops HTTP server, a Prometheus metrics registry, one JSON logger, an address-guarded fetch that blocks caller-defined IP ranges, and small HTTP and timer helpers. It is consumed by [pulse-probe](https://github.com/lorenzh/pulse-probe), [pulse-api](https://github.com/lorenzh/pulse-api), [pulse-status](https://github.com/lorenzh/pulse-status), [pulse-notify](https://github.com/lorenzh/pulse-notify) and [pulse-console](https://github.com/lorenzh/pulse-console).
 
 Documentation: [docs/index.md](docs/index.md).
 

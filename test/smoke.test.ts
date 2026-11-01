@@ -7,6 +7,9 @@ import { join } from "node:path";
 
 const ALL_MODULES = [
   "index",
+  "address-guard",
+  "guarded-fetch",
+  "ip-classifier",
   "atomic-write",
   "escape",
   "format-duration",
@@ -50,8 +53,14 @@ test("package entry exports the helpers", async () => {
   assert.deepEqual(
     Object.keys(mod).sort(byName),
     [
+      "BlockedAddressError",
       "AtomicWriteError",
       "BodyError",
+      "connectFirst",
+      "createGuardedFetch",
+      "createIpClassifier",
+      "lookupAll",
+      "resolveAllowed",
       "DURATION_BUCKETS_SECONDS",
       "LOG_LEVELS",
       "MAX_TIMER_DELAY_MS",

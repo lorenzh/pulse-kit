@@ -1,7 +1,10 @@
+export { BlockedAddressError, connectFirst, type LookupAll, lookupAll, resolveAllowed, } from "./address-guard.ts";
 export { AtomicWriteError, type AtomicWriteFs, type AtomicWriteOptions, type AtomicWriteStage, type AtomicWriteSyncFs, nodeAtomicWriteFs, nodeAtomicWriteSyncFs, writeFileAtomic, writeFileAtomicSync, } from "./atomic-write.ts";
 export { escapeHtml, escapeLabel } from "./escape.ts";
 export { formatDuration } from "./format-duration.ts";
+export { createGuardedFetch, type GuardedFetch } from "./guarded-fetch.ts";
 export { BodyError, readBody, readJsonBody, sendJson } from "./http.ts";
+export { type AddressClassifier, createIpClassifier, type IpRule } from "./ip-classifier.ts";
 export { isRecord } from "./is-record.ts";
 export { createLogger, LOG_LEVELS, type LogFields, type Logger, type LoggerOptions, type LogLevel, readLogLevel, } from "./logger.ts";
 export { type Counter, createRegistry, DURATION_BUCKETS_SECONDS, type Gauge, type Histogram, type Labels, type Registry, } from "./metrics.ts";
