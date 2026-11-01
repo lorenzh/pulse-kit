@@ -46,13 +46,22 @@ function pinnedInit(url, init, headers) {
     // its connection pool by it, so a pooled socket is never reused for another name.
     return { ...init, headers, tls: { ...init.tls, serverName: url.hostname } };
 }
-function redactPath(value, origin) {
-    if (typeof value === "object" &&
-        value !== null &&
-        "path" in value &&
-        typeof value.path === "string") {
-        // Bun puts the full URL, with credentials and query, in `path`. It cannot be deleted.
-        Object.assign(value, { path: origin });
+const redactedFields = ["path", "message", "stack"];
+function redactUrl(value, target) {
+    if (typeof value !== "object" || value === null)
+        return;
+    // Bun puts the full URL, with credentials and query, in `path` and in some messages.
+    // The fields cannot be deleted, but they can be overwritten.
+    for (const field of redactedFields) {
+        if (field in value) {
+            const text = Reflect.get(value, field);
+            if (typeof text === "string" && text.includes(target.href)) {
+                Object.assign(value, { [field]: text.replaceAll(target.href, target.origin) });
+            }
+            else if (field === "path" && typeof text === "string") {
+                Object.assign(value, { path: target.origin });
+            }
+        }
     }
 }
 /** Calls the transport and keeps the URL's credentials and query out of its error. */
@@ -61,9 +70,9 @@ async function send(fetch, target, init) {
         return await fetch(target.href, init);
     }
     catch (err) {
-        redactPath(err, target.origin);
+        redactUrl(err, target);
         if (err instanceof Error)
-            redactPath(err.cause, target.origin);
+            redactUrl(err.cause, target);
         throw err;
     }
 }

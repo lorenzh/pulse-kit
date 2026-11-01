@@ -240,4 +240,33 @@ describe("transport errors", () => {
     assert.equal(text.includes("query-sentinel"), false);
     assert.equal((err as Error & { code?: unknown }).code, "ConnectionRefused");
   });
+
+  test("a malformed response error holds no credentials or query", async () => {
+    const server = Bun.listen({
+      hostname: "127.0.0.1",
+      port: 0,
+      socket: {
+        data(socket) {
+          socket.end("HTTP/1.1 200 OK\r\nbad header\r\n\r\n");
+        },
+      },
+    });
+    const guarded = createGuardedFetch({
+      classify: createIpClassifier([]),
+      lookup: () => Promise.resolve(["127.0.0.1"]),
+      fetch: (url, init) => fetch(url, init),
+    });
+    try {
+      const err: unknown = await guarded(
+        `http://user:pw-sentinel@pinned.test:${server.port}/?q=query-sentinel`,
+        { redirect: "manual" },
+      ).catch((e: unknown) => e);
+      assert.ok(err instanceof Error);
+      const text = `${Bun.inspect(err)} ${err.message} ${err.stack ?? ""}`;
+      assert.equal(text.includes("pw-sentinel"), false);
+      assert.equal(text.includes("query-sentinel"), false);
+    } finally {
+      server.stop(true);
+    }
+  });
 });

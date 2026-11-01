@@ -59,15 +59,21 @@ function pinnedInit(url: URL, init: BunFetchRequestInit, headers: Headers): BunF
   return { ...init, headers, tls: { ...init.tls, serverName: url.hostname } };
 }
 
-function redactPath(value: unknown, origin: string): void {
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "path" in value &&
-    typeof value.path === "string"
-  ) {
-    // Bun puts the full URL, with credentials and query, in `path`. It cannot be deleted.
-    Object.assign(value, { path: origin });
+const redactedFields = ["path", "message", "stack"] as const;
+
+function redactUrl(value: unknown, target: URL): void {
+  if (typeof value !== "object" || value === null) return;
+  // Bun puts the full URL, with credentials and query, in `path` and in some messages.
+  // The fields cannot be deleted, but they can be overwritten.
+  for (const field of redactedFields) {
+    if (field in value) {
+      const text: unknown = Reflect.get(value, field);
+      if (typeof text === "string" && text.includes(target.href)) {
+        Object.assign(value, { [field]: text.replaceAll(target.href, target.origin) });
+      } else if (field === "path" && typeof text === "string") {
+        Object.assign(value, { path: target.origin });
+      }
+    }
   }
 }
 
@@ -80,8 +86,8 @@ async function send(
   try {
     return await fetch(target.href, init);
   } catch (err) {
-    redactPath(err, target.origin);
-    if (err instanceof Error) redactPath(err.cause, target.origin);
+    redactUrl(err, target);
+    if (err instanceof Error) redactUrl(err.cause, target);
     throw err;
   }
 }
