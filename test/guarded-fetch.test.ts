@@ -136,7 +136,28 @@ describe("validation vs connection", () => {
     await guarded("https://[2001:db8::1]:8443/", init);
     assert.equal(lookups.length, 0);
     assert.equal(calls[0]?.url, "https://[2001:db8::1]:8443/");
-    assert.equal(calls[0]?.init, init);
+    assert.deepEqual(calls[0]?.init, init);
+  });
+
+  test("options changed during the lookup do not reach the transport", async () => {
+    const calls: Call[] = [];
+    const init: BunFetchRequestInit = { redirect: "manual", tls: { rejectUnauthorized: true } };
+    const guarded = createGuardedFetch({
+      classify,
+      lookup: () => {
+        Object.assign(init, { redirect: "follow", proxy: "http://proxy.test/" });
+        Object.assign(init.tls ?? {}, { rejectUnauthorized: false });
+        return Promise.resolve(["203.0.113.10"]);
+      },
+      fetch: (url, sent) => {
+        calls.push({ url, init: sent });
+        return Promise.resolve(new Response("ok"));
+      },
+    });
+    await guarded("https://public.test/", init);
+    assert.equal(calls[0]?.init.redirect, "manual");
+    assert.equal(calls[0]?.init.proxy, undefined);
+    assert.equal(calls[0]?.init.tls?.rejectUnauthorized, true);
   });
 
   test("a blocked literal or answer makes no fetch call", async () => {

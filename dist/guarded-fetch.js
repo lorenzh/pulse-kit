@@ -25,6 +25,18 @@ function parseTarget(input, init) {
     }
     return url;
 }
+/**
+ * Copies the caller's options once. The guard validates and sends this copy, so a caller that
+ * changes its own object while the lookup runs cannot switch on redirects, a proxy or a socket.
+ */
+function snapshotInit(init) {
+    if (init === undefined)
+        return undefined;
+    const copy = { ...init };
+    if (init.tls !== undefined)
+        copy.tls = { ...init.tls };
+    return copy;
+}
 function isIpLiteralHost(hostname) {
     // The WHATWG URL parser normalizes every IPv4 spelling to dotted form and brackets IPv6.
     return hostname.startsWith("[") || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
@@ -78,7 +90,8 @@ async function send(fetch, target, init) {
 }
 /** Wraps `fetch` so every call resolves the host, checks every address and connects to one. */
 export function createGuardedFetch({ fetch, lookup, classify }) {
-    return async (input, init) => {
+    return async (input, callerInit) => {
+        const init = snapshotInit(callerInit);
         const url = parseTarget(input, init);
         const options = init ?? {};
         const headers = parseHeaders(options);
