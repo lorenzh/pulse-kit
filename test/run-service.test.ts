@@ -150,20 +150,59 @@ test("a stop that hangs exits after the timeout with timeoutExitCode", async () 
   );
 });
 
-test("timeout exit code defaults to 0", async () => {
+test("timeout exit code defaults to 1", async () => {
   const f = fakes();
+  let release = (): void => {};
   await runService({
     ...f,
     service: "x",
     timeoutMs: 5,
     start: async () => {},
-    stop: () => new Promise<void>(() => {}),
+    stop: () =>
+      new Promise<void>((r) => {
+        release = r;
+      }),
   });
   f.handlers.get("SIGTERM")?.();
   await tick();
   f.timers[0]?.fn();
-  assert.deepEqual(f.exits, [0]);
+  assert.deepEqual(f.exits, [1]);
+  release();
+  await tick();
+  f.handlers.get("SIGINT")?.();
+  await tick();
+  assert.deepEqual(f.exits, [1]);
 });
+
+for (const [label, extra] of [
+  ["timeoutExitCode 0", { timeoutExitCode: 0 }],
+  ["timeoutExitCode -1", { timeoutExitCode: -1 }],
+  ["timeoutExitCode 256", { timeoutExitCode: 256 }],
+  ["timeoutExitCode 1.5", { timeoutExitCode: 1.5 }],
+  ["timeoutMs 2147483648", { timeoutMs: 2147483648 }],
+  ["timeoutMs 0", { timeoutMs: 0 }],
+] as const) {
+  test(`${label} rejects with RangeError before handlers and start`, async () => {
+    const f = fakes();
+    let starts = 0;
+    await assert.rejects(
+      runService({
+        ...f,
+        service: "x",
+        timeoutMs: 5,
+        ...extra,
+        start: async () => {
+          starts += 1;
+        },
+        stop: async () => {},
+      }),
+      RangeError,
+    );
+    assert.equal(f.handlers.size, 0);
+    assert.equal(starts, 0);
+    assert.deepEqual(f.exits, []);
+  });
+}
 
 test("a stop that throws exits 1", async () => {
   const f = fakes();
