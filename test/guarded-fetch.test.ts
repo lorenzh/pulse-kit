@@ -302,4 +302,48 @@ describe("transport errors", () => {
       server.stop(true);
     }
   });
+
+  test("a body read error after the response holds no credentials or query", async () => {
+    const server = Bun.listen({
+      hostname: "127.0.0.1",
+      port: 0,
+      socket: {
+        data(socket) {
+          socket.write("HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nshort");
+          setTimeout(() => socket.end(), 50);
+        },
+      },
+    });
+    const guarded = createGuardedFetch({
+      classify: createIpClassifier([]),
+      lookup: () => Promise.resolve(["127.0.0.1"]),
+      fetch: (url, init) => fetch(url, init),
+    });
+    try {
+      const response = await guarded(
+        `http://user:pw-sentinel@pinned.test:${server.port}/?q=query-sentinel`,
+        { redirect: "manual" },
+      );
+      assert.equal(response.status, 200);
+      const err: unknown = await response.text().catch((e: unknown) => e);
+      assert.ok(err instanceof Error);
+      const text = `${Bun.inspect(err)} ${err.message} ${err.stack ?? ""}`;
+      assert.equal(text.includes("pw-sentinel"), false);
+      assert.equal(text.includes("query-sentinel"), false);
+    } finally {
+      server.stop(true);
+    }
+  });
+
+  test("a body is passed through with its status and headers", async () => {
+    const guarded = createGuardedFetch({
+      classify: createIpClassifier([]),
+      lookup: () => Promise.resolve(["127.0.0.1"]),
+      fetch: () => Promise.resolve(new Response("hello", { status: 201, headers: { "x-a": "b" } })),
+    });
+    const response = await guarded("http://pinned.test/", { redirect: "manual" });
+    assert.equal(response.status, 201);
+    assert.equal(response.headers.get("x-a"), "b");
+    assert.equal(await response.text(), "hello");
+  });
 });

@@ -78,15 +78,52 @@ function redactUrl(value, target) {
 }
 /** Calls the transport and keeps the URL's credentials and query out of its error. */
 async function send(fetch, target, init) {
+    let response;
     try {
-        return await fetch(target.href, init);
+        response = await fetch(target.href, init);
     }
     catch (err) {
-        redactUrl(err, target);
-        if (err instanceof Error)
-            redactUrl(err.cause, target);
-        throw err;
+        throw redactError(err, target);
     }
+    return redactBody(response, target);
+}
+function redactError(err, target) {
+    redactUrl(err, target);
+    if (err instanceof Error)
+        redactUrl(err.cause, target);
+    return err;
+}
+/**
+ * The body arrives after fetch resolves, so a read error (a reset or a short body) would bypass
+ * `send`. The body is piped through a stream that cleans each read error the same way.
+ */
+function redactBody(response, target) {
+    const body = response.body;
+    if (body === null)
+        return response;
+    const reader = body.getReader();
+    const stream = new ReadableStream({
+        async pull(controller) {
+            try {
+                const chunk = await reader.read();
+                if (chunk.done)
+                    controller.close();
+                else
+                    controller.enqueue(chunk.value);
+            }
+            catch (err) {
+                controller.error(redactError(err, target));
+            }
+        },
+        cancel(reason) {
+            return reader.cancel(reason);
+        },
+    });
+    return new Response(stream, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+    });
 }
 /** Wraps `fetch` so every call resolves the host, checks every address and connects to one. */
 export function createGuardedFetch({ fetch, lookup, classify }) {
