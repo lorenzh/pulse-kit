@@ -335,6 +335,31 @@ describe("transport errors", () => {
     }
   });
 
+  test("a body cancel error holds no credentials or query", async () => {
+    const href = "http://user:pw-sentinel@127.0.0.1/?q=query-sentinel";
+    const body = new ReadableStream<Uint8Array>({
+      cancel(): Promise<void> {
+        const err = new Error(`reset fetching "${href}"`);
+        Object.assign(err, { path: href, code: "ECONNRESET" });
+        return Promise.reject(err);
+      },
+    });
+    const guarded = createGuardedFetch({
+      classify: createIpClassifier([]),
+      lookup: () => Promise.resolve(["127.0.0.1"]),
+      fetch: () => Promise.resolve(new Response(body)),
+    });
+    const response = await guarded("http://user:pw-sentinel@pinned.test/?q=query-sentinel", {
+      redirect: "manual",
+    });
+    const err: unknown = await response.body?.cancel().catch((e: unknown) => e);
+    assert.ok(err instanceof Error);
+    // Bun.inspect would print this test's source lines, which hold the sentinels.
+    const text = `${String(Reflect.get(err, "path"))} ${err.message} ${err.stack ?? ""}`;
+    assert.equal(text.includes("pw-sentinel"), false);
+    assert.equal(text.includes("query-sentinel"), false);
+  });
+
   test("a body is passed through with its status and headers", async () => {
     const guarded = createGuardedFetch({
       classify: createIpClassifier([]),

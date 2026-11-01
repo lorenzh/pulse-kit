@@ -115,8 +115,13 @@ function redactBody(response, target) {
                 controller.error(redactError(err, target));
             }
         },
-        cancel(reason) {
-            return reader.cancel(reason);
+        async cancel(reason) {
+            try {
+                await reader.cancel(reason);
+            }
+            catch (err) {
+                throw redactError(err, target);
+            }
         },
     });
     return new Response(stream, {

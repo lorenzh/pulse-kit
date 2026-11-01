@@ -127,8 +127,12 @@ function redactBody(response: Response, target: URL): Response {
         controller.error(redactError(err, target));
       }
     },
-    cancel(reason: unknown): Promise<void> {
-      return reader.cancel(reason);
+    async cancel(reason: unknown): Promise<void> {
+      try {
+        await reader.cancel(reason);
+      } catch (err) {
+        throw redactError(err, target);
+      }
     },
   });
   return new Response(stream, {
