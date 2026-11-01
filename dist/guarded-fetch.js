@@ -101,8 +101,10 @@ export function createGuardedFetch({ fetch, lookup, classify }) {
             signal: options.signal ?? undefined,
         });
         if (isIpLiteralHost(url.hostname)) {
-            // Through connectFirst too, so an abort after the lookup still stops the attempt.
-            return connectFirst(addresses, () => send(fetch, url, options), options.signal ?? undefined);
+            // Through connectFirst too, so an abort after the lookup still stops the attempt. The
+            // validated header copy is sent, so a caller cannot swap in a bad value during the lookup.
+            const literal = { ...options, headers };
+            return connectFirst(addresses, () => send(fetch, url, literal), options.signal ?? undefined);
         }
         const pinned = pinnedInit(url, options, headers);
         return connectFirst(addresses, (address) => {

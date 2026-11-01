@@ -136,7 +136,19 @@ describe("validation vs connection", () => {
     await guarded("https://[2001:db8::1]:8443/", init);
     assert.equal(lookups.length, 0);
     assert.equal(calls[0]?.url, "https://[2001:db8::1]:8443/");
-    assert.deepEqual(calls[0]?.init, init);
+    const { headers, ...rest } = calls[0]?.init ?? {};
+    assert.deepEqual(rest, { redirect: "manual" });
+    assert.deepEqual(Object.fromEntries(new Headers(headers)), { a: "1" });
+  });
+
+  test("an IP literal sends the validated headers, not the caller's object", async () => {
+    const { guarded, calls } = setup([]);
+    const headers: Record<string, string> = { authorization: "Bearer ok" };
+    const pending = guarded("https://203.0.113.10/", { redirect: "manual", headers });
+    headers.authorization = "Bearer header-sentinel\r\nX: y";
+    await pending;
+    assert.equal(calls.length, 1);
+    assert.equal(new Headers(calls[0]?.init.headers).get("authorization"), "Bearer ok");
   });
 
   test("options changed during the lookup do not reach the transport", async () => {
