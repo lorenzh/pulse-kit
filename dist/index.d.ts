@@ -1,6 +1,7 @@
 export { BlockedAddressError, connectFirst, type LookupAll, lookupAll, resolveAllowed, } from "./address-guard.ts";
 export { AtomicWriteError, type AtomicWriteFs, type AtomicWriteOptions, type AtomicWriteStage, type AtomicWriteSyncFs, nodeAtomicWriteFs, nodeAtomicWriteSyncFs, writeFileAtomic, writeFileAtomicSync, } from "./atomic-write.ts";
 export { escapeHtml, escapeLabel } from "./escape.ts";
+export { clientKeyOf, createFailureLimiter, type FailureCheck, type FailureLimiter, type FailureLimiterOptions, } from "./failure-limiter.ts";
 export { formatDuration } from "./format-duration.ts";
 export { createGuardedFetch, type GuardedFetch } from "./guarded-fetch.ts";
 export { BodyError, readBody, readJsonBody, sendJson } from "./http.ts";

@@ -1,6 +1,7 @@
 export { BlockedAddressError, connectFirst, lookupAll, resolveAllowed, } from "./address-guard.js";
 export { AtomicWriteError, nodeAtomicWriteFs, nodeAtomicWriteSyncFs, writeFileAtomic, writeFileAtomicSync, } from "./atomic-write.js";
 export { escapeHtml, escapeLabel } from "./escape.js";
+export { clientKeyOf, createFailureLimiter, } from "./failure-limiter.js";
 export { formatDuration } from "./format-duration.js";
 export { createGuardedFetch } from "./guarded-fetch.js";
 export { BodyError, readBody, readJsonBody, sendJson } from "./http.js";
