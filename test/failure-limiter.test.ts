@@ -225,6 +225,47 @@ describe("createFailureLimiter", () => {
   });
 });
 
+describe("createFailureLimiter after a backward clock jump", () => {
+  const scenario = (): { limiter: FailureLimiter } => {
+    let t = 1000;
+    const limiter = createFailureLimiter({ limit: 2, maxKeys: 4, windowMs: 60_000, now: () => t });
+    const fail = (key: string): void => {
+      expect(limiter.check(key)).toEqual({ isBlocked: false });
+      limiter.recordFailure(key);
+    };
+    fail("a");
+    t = 0;
+    for (const k of ["p1", "p2", "p3"]) fail(k);
+    t = 60_000;
+    fail("c");
+    fail("c");
+    return { limiter };
+  };
+  const cases: { name: string; run: (l: FailureLimiter) => unknown; expected: unknown }[] = [
+    { name: "check of a fresh key", run: (l) => l.check("fresh"), expected: { isBlocked: false } },
+    {
+      name: "recordFailure of a fresh key opens an own window",
+      run: (l) => {
+        l.recordFailure("fresh");
+        l.recordFailure("fresh");
+        return [l.check("fresh"), l.check("other")];
+      },
+      expected: [{ isBlocked: true, retryAfterMs: 60_000 }, { isBlocked: false }],
+    },
+    {
+      name: "check of the key that used its own window",
+      run: (l) => l.check("c"),
+      expected: { isBlocked: true, retryAfterMs: 60_000 },
+    },
+  ];
+  for (const c of cases) {
+    test(`ended windows free capacity: ${c.name}`, () => {
+      const { limiter } = scenario();
+      expect(c.run(limiter)).toEqual(c.expected);
+    });
+  }
+});
+
 describe("clientKeyOf", () => {
   /* eslint-disable sonarjs/no-hardcoded-ip -- literal addresses are the inputs under test */
   test.each([

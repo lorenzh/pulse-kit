@@ -16,6 +16,7 @@ export function createFailureLimiter(options) {
     // Insertion order equals window start order, so ended windows sit at the front.
     const own = new Map();
     let overflow;
+    let latestStart = Number.NEGATIVE_INFINITY;
     const isLive = (w, t) => t < w.windowStart + windowMs;
     const dropEnded = (t) => {
         for (const [key, w] of own) {
@@ -79,6 +80,14 @@ export function createFailureLimiter(options) {
                     // Delete first so the re-added key moves to the end and keeps start order.
                     own.delete(key);
                     own.set(key, { windowStart: t, count: 1 });
+                    // The clock moved backward: re-sort so dropEnded can stop at the first live entry.
+                    if (t < latestStart) {
+                        const sorted = [...own].sort(([, a], [, b]) => a.windowStart - b.windowStart);
+                        own.clear();
+                        for (const [k, w] of sorted)
+                            own.set(k, w);
+                    }
+                    latestStart = Math.max(latestStart, t);
                     return;
                 default: {
                     const never = r;
