@@ -119,6 +119,50 @@ address list: the caller brings its rules. `guarded-fetch.ts` needs Bun, because
 Bun's fetch still uses `HTTP_PROXY` and `HTTPS_PROXY`; the proxy only gets the validated IP. `NO_PROXY`
 entries that name hosts no longer match, because the URL holds an IP.
 
+### Failure limiter (`failure-limiter.ts`)
+
+Root export only. No timers, no I/O, no auth concepts. State is per instance and bounded by
+`maxKeys + 1` windows.
+
+| Export                                                                    | Behavior                                |
+| ------------------------------------------------------------------------- | --------------------------------------- |
+| `createFailureLimiter({ limit, windowMs, maxKeys, now }): FailureLimiter` | Creates a limiter; rules below.         |
+| `FailureLimiter.check(key): FailureCheck`                                 | Reads whether `key` is blocked.         |
+| `FailureLimiter.recordFailure(key): void`                                 | Counts one failure for `key`.           |
+| `clientKeyOf(address): string`                                            | Turns a peer address into a client key. |
+| `type FailureLimiterOptions`, `type FailureCheck`                         | Options and the result of `check`.      |
+
+Options: `limit` and `maxKeys` are integers from 1 to 1000000, `windowMs` an integer from 1 to
+`MAX_TIMER_DELAY_MS`; otherwise `RangeError` at creation. `now` returns epoch ms.
+
+Each key gets an own fixed window `{ windowStart, count }` of `windowMs` from the failure that
+opened it, at most `maxKeys` of them, plus one shared overflow window. A window is live while
+`now() < windowStart + windowMs`.
+
+Routing, one rule for both methods at the same `now()`: a key with a live own window uses it.
+Otherwise the key uses the overflow window when the table holds `maxKeys` live windows or the
+overflow window is live; otherwise it gets a new own window. A full table never evicts a live
+window.
+
+`check` returns `{ isBlocked: true, retryAfterMs }` when the routed window is live and holds
+`limit` failures, else `{ isBlocked: false }`. `retryAfterMs` is the rest of that window, clamped
+to 1 to `windowMs`, also when the clock goes backwards. `check` changes no observable state.
+`recordFailure` drops ended windows, then adds 1 to the routed live window (the count stops at
+`limit`) or opens it with count 1. Nothing resets a window early.
+
+Overflow recovery: an own window is never opened while the overflow window is live, so a key that
+failed in overflow gets a fresh own budget only after the overflow window has ended.
+
+Bound: when callers record only after a check that was not blocked, each window holds at most
+`limit` evaluated failures and at most `maxKeys + 1` windows are live. A window that ends inside an
+interval and the next one that starts in it can both count, so any interval of `windowMs` ms holds
+at most `2 * (maxKeys + 1) * limit` evaluated failures (factor 2).
+
+`clientKeyOf(address: string | undefined)` trims and drops brackets and a `%zone`. IPv4 stays as
+is. IPv4-mapped IPv6 (`::ffff:127.0.0.1`, `::ffff:7f00:1`) gives the dotted IPv4. Other IPv6 gives
+its /64: the first four groups in lower-case hex plus `::/64` (`2001:DB8:0:1:aa::1` gives
+`2001:db8:0:1::/64`, `::1` gives `0:0:0:0::/64`). `undefined`, empty or not an IP gives `unknown`.
+
 ### Format and escape (browser-safe)
 
 | Export                       | Behavior                                                                                                                                                                                                |
