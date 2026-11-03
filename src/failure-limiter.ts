@@ -17,7 +17,11 @@ import { MAX_TIMER_DELAY_MS } from "./timer.ts";
  * Bound: when callers record a failure only after a check that was not blocked, each window holds
  * at most `limit` evaluated failures and at most `maxKeys + 1` windows are live. A window that ends
  * inside an interval and the next one that starts inside it can both count, so any interval of
- * `windowMs` ms holds at most `2 × (maxKeys + 1) × limit` evaluated failures (factor 2).
+ * `windowMs` ms holds at most `2 × (maxKeys + 1) × limit` evaluated failures (factor 2). This
+ * interval bound is valid while `now()` does not decrease. A rollback after a cleanup reopens
+ * budgets at earlier epoch times, and the ended windows are not restored, so an interval can then
+ * hold more. For any clock, each window still holds at most `limit` failures, at most
+ * `maxKeys + 1` windows are live, and `retryAfterMs` stays in `1..windowMs`.
  */
 
 export interface FailureLimiterOptions {

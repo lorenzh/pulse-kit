@@ -264,6 +264,42 @@ describe("createFailureLimiter after a backward clock jump", () => {
       expect(c.run(limiter)).toEqual(c.expected);
     });
   }
+
+  // Pins a known limit, not a guarantee: the interval bound holds only while now() does not
+  // decrease (see the Bound paragraph in docs/index.md). Two 2 ms rollbacks after cleanups exceed it.
+  test("interval bound assumes a nondecreasing clock: rollbacks after cleanup admit 10 > 8", () => {
+    let t = 0;
+    const limiter = createFailureLimiter({ limit: 2, maxKeys: 1, windowMs: 60_000, now: () => t });
+    const admitted: number[] = [];
+    const fail = (key: string): void => {
+      expect(limiter.check(key)).toEqual({ isBlocked: false });
+      limiter.recordFailure(key);
+      admitted.push(t);
+    };
+    t = 0;
+    fail("a");
+    fail("b");
+    t = 59_999;
+    fail("a");
+    fail("b");
+    t = 60_000;
+    expect(limiter.check("cleanup")).toEqual({ isBlocked: false });
+    t = 59_998;
+    expect(limiter.check("rollback")).toEqual({ isBlocked: false });
+    t = 59_999;
+    for (const k of ["a", "a", "b", "b"]) fail(k);
+    t = 119_999;
+    expect(limiter.check("cleanup")).toEqual({ isBlocked: false });
+    t = 119_997;
+    for (const k of ["a", "a", "b", "b"]) fail(k);
+
+    expect(admitted).toEqual([
+      0, 0, 59_999, 59_999, 59_999, 59_999, 59_999, 59_999, 119_997, 119_997, 119_997, 119_997,
+    ]);
+    const inInterval = admitted.filter((at) => at >= 59_999 && at < 119_999).length;
+    expect(inInterval).toBe(10);
+    expect(inInterval).toBeGreaterThan(8);
+  });
 });
 
 describe("clientKeyOf", () => {

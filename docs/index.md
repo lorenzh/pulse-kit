@@ -156,7 +156,11 @@ failed in overflow gets a fresh own budget only after the overflow window has en
 Bound: when callers record only after a check that was not blocked, each window holds at most
 `limit` evaluated failures and at most `maxKeys + 1` windows are live. A window that ends inside an
 interval and the next one that starts in it can both count, so any interval of `windowMs` ms holds
-at most `2 * (maxKeys + 1) * limit` evaluated failures (factor 2).
+at most `2 * (maxKeys + 1) * limit` evaluated failures (factor 2). This interval bound is valid
+while `now()` does not decrease. A rollback after a cleanup reopens budgets at earlier epoch times,
+and the ended windows are not restored, so an interval can then hold more. For any clock, each
+window still holds at most `limit` failures, at most `maxKeys + 1` windows are live, and
+`retryAfterMs` stays in `1..windowMs`.
 
 `clientKeyOf(address: string | undefined)` trims and drops brackets and a `%zone`. IPv4 stays as
 is. IPv4-mapped IPv6 (`::ffff:127.0.0.1`, `::ffff:7f00:1`) gives the dotted IPv4. Other IPv6 gives
