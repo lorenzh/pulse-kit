@@ -102,7 +102,7 @@ The shared tooling configuration lives in `lorenzh/pulse-config`. The other puls
 
 ## This repository
 
-- Runtime helpers only, no service logic. Planned modules are listed in `docs/index.md`.
+- Runtime helpers only, no service logic. The exported helpers are documented in the "Exports" section of [`docs/index.md`](docs/index.md#exports).
 - No runtime dependency except packages on the approved-packages list in pulse-meta. Add one only when it is on that list.
 - A helper takes its side effects as parameters (`env`, `now`, `setTimeout`, `log`, `process`) so services and tests can inject them.
 - `dist/` is committed, because Node and Bun do not reliably strip types under `node_modules` and Git dependencies
