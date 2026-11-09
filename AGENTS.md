@@ -54,6 +54,10 @@ repository. Bun 1.4.0 runs TypeScript directly, ESM, strict TypeScript (`tsc --n
 - Name a function by its effect (`postResult`, `applyResult`); a pure query reads as a noun or question (`quorumStatus`, `isStale`).
 - Booleans start with `is`, `has`, or `can`. Files are kebab-case.
 
+## Code conventions
+
+The pulse [code conventions](https://github.com/lorenzh/pulse-meta/blob/main/docs/code-conventions.md) apply to every change. Search the exports in [`docs/index.md`](docs/index.md#exports) before writing a helper, and extend an existing helper with a parameter before adding a variant; the second copy of a pattern becomes one shared helper. Helpers stay small and pure, with side effects passed as parameters.
+
 ## Errors
 
 - Throw only `Error` subclasses with a `name`. Wrap with `{ cause }` instead of losing the original.
